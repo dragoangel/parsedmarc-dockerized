@@ -1,0 +1,66 @@
+version: '3'
+
+services:
+  parsedmarc:
+    container_name: "parsedmarc"
+    build:
+      context: .
+      dockerfile: parsedmarc/Dockerfile
+    command: "parsedmarc -c /etc/parsedmarc.ini"
+    tty: true
+    volumes:
+      - ./parsedmarc/parsedmarc.ini:/etc/parsedmarc.ini:z
+    restart: unless-stopped
+    networks:
+      - parsedmarc-network
+
+  elasticsearch:
+    container_name: "elasticsearch"
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.4.2
+    environment:
+      - cluster.name=parsedmarc
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ./elasticsearch/data/:/usr/share/elasticsearch/data/:z
+    restart: "unless-stopped"
+    networks:
+      - parsedmarc-network
+
+  kibana:
+    container_name: "kibana"
+    image: docker.elastic.co/kibana/kibana:7.4.2
+    environment:
+      - server.name=parsedmarc
+      - server.host="0"
+      - elasticsearch.hosts=http://elasticsearch:9200
+      - xpack.monitoring.ui.container.elasticsearch.enabled=true
+    ports:
+      - "5601:5601"
+    restart: unless-stopped
+    networks:
+      - parsedmarc-network
+
+  nginx:
+    container_name: "nginx"
+    image: nginx:alpine
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d/:/etc/nginx/conf.d/:z
+      - ./nginx/ssl/:/etc/nginx/ssl/:z
+      - ./nginx/htpasswd:/etc/nginx/htpasswd:z
+    networks:
+      - parsedmarc-network
+
+networks:
+    parsedmarc-network:
+      driver: bridge
