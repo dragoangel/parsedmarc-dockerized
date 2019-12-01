@@ -1,12 +1,9 @@
-FROM pypy:3.6-slim
-
+FROM pypy:latest
 
 RUN apt-get update \
-    && apt-get install -y gcc \
-    && pip install -y parsedmarc \
+    && apt-get install -y libxml2-dev libxslt-dev python-dev \
+    && pip install parsedmarc \
     && rm -rf /root/.cache/ \
-    && apt-get purge -y gcc \
-    && apt-get autoremove -y \
     && rm -rf /var/lib/{apt,dpkg}/
 
 CMD ["parsedmarc"]
