@@ -1,4 +1,4 @@
-version: '3'
+version: '2.4'
 
 services:
   parsedmarc:
@@ -13,6 +13,9 @@ services:
     restart: unless-stopped
     networks:
       - parsedmarc-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
 
   elasticsearch:
     container_name: "elasticsearch"
@@ -31,6 +34,12 @@ services:
     restart: "unless-stopped"
     networks:
       - parsedmarc-network
+    healthcheck:
+      test: ["CMD", "curl","-s" ,"-f", "http://localhost:9200/_cat/health"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   kibana:
     container_name: "kibana"
@@ -45,6 +54,9 @@ services:
     restart: unless-stopped
     networks:
       - parsedmarc-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
 
   nginx:
     container_name: "nginx"
