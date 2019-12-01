@@ -14,6 +14,14 @@ The author recommends restricting Nginx access only to trusted IP addresses.
 
 The project is delivered as is without any warranty.
 
+To update parsedmarc:
+```
+cd parsedmarc-dockerized
+docker-compose build --no-cache --pull parsedmarc
+docker-compose pull
+docker-compose up -d
+```
+
 ## :gear: How-to deploy from scratch
 First of all you need to have :whale: Docker and :octocat: Docker Compose.
 
