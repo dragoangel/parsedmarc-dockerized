@@ -10,6 +10,7 @@ services:
     tty: true
     volumes:
       - ./parsedmarc/parsedmarc.ini:/etc/parsedmarc.ini:z
+      #- /path/to/GeoIP:/usr/share/GeoIP
     restart: unless-stopped
     networks:
       - parsedmarc-network

@@ -55,7 +55,14 @@ user = parsedmarc@example.com
 password = somepassword
 ```
 
-4. Create `nginx/htpasswd` to provide Basic-Authentification for Nginx.
+4. Enable IP geolocation by installing [GeoIP Update software](https://github.com/maxmind/geoipupdate). And edit `docker-compose.yml` to enable access to the MaxMind databases on your host system.
+```
+volumes:
+  - ./parsedmarc/parsedmarc.ini:/etc/parsedmarc.ini:z
+  - /path/to/GeoIP:/usr/share/GeoIP
+```
+
+5. Create `nginx/htpasswd` to provide Basic-Authentification for Nginx.
 Change `dnf` to your package manager and `anyusername` to your needs.
 In end you will be promtet to enter password to console.
 ```
@@ -63,13 +70,13 @@ dnf install -y httpd-tools
 htpasswd -c nginx/htpasswd anyusername
 ```
 
-5. Generate & put your SSL keypair `kibana.crt` and `kibana.key` to `nginx/ssl` folder.
+6. Generate & put your SSL keypair `kibana.crt` and `kibana.key` to `nginx/ssl` folder.
 
 There are to many posible solutuins like [Let's Encrypt](https://letsencrypt.org/docs/client-options/), private PKI or [self-hosted](https://www.digitalocean.com/community/tutorials/how-to-create-a-self-signed-ssl-certificate-for-nginx-in-ubuntu-16-04) certificates.
 
 It all up to you what to use. Note: for Let's Encrypt you need modify nginx configs to support it. You can use local ACME or modify docker-compose image. 
 
-6. Create needed folders and configure permissions.
+7. Create needed folders and configure permissions.
 ```
 mkdir -p elasticsearch/data
 chown 1000:0 elasticsearch/data
@@ -79,14 +86,14 @@ chmod 640 nginx/htpasswd
 chmod 640 nginx/ssl/kibana.key
 ```
 
-7. Tune `vm.max_map_count` on your OS, original how-to avaible [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html).
+8. Tune `vm.max_map_count` on your OS, original how-to avaible [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html).
 
-8. Start stack.
+9. Start stack.
 ```
 docker-compose -up d
 ```
 
-9. Download & Import [kibana_saved_objects.json](https://raw.githubusercontent.com/domainaware/parsedmarc/master/kibana/kibana_saved_objects.json).
+10. Download & Import [kibana_saved_objects.json](https://raw.githubusercontent.com/domainaware/parsedmarc/master/kibana/kibana_saved_objects.json).
 
 Go to `https://parsedmarc.example.com/app/kibana#/management/kibana/objects?_g=()` click on `Import`.
 
