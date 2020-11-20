@@ -20,7 +20,7 @@ services:
 
   elasticsearch:
     container_name: "elasticsearch"
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.4.2
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.9.3
     environment:
       - cluster.name=parsedmarc
       - discovery.type=single-node
@@ -44,7 +44,7 @@ services:
 
   kibana:
     container_name: "kibana"
-    image: docker.elastic.co/kibana/kibana:7.4.2
+    image: docker.elastic.co/kibana/kibana:7.9.3
     environment:
       - server.name=parsedmarc
       - server.host="0"

@@ -64,7 +64,7 @@ volumes:
 
 5. Create `nginx/htpasswd` to provide Basic-Authentification for Nginx.
 Change `dnf` to your package manager and `anyusername` to your needs.
-In end you will be promtet to enter password to console.
+In end you will be prompted to enter password to console.
 ```
 dnf install -y httpd-tools
 htpasswd -c nginx/htpasswd anyusername
@@ -93,11 +93,11 @@ chmod 640 nginx/ssl/kibana.key
 docker-compose -up d
 ```
 
-10. Download & Import [kibana_saved_objects.json](https://raw.githubusercontent.com/domainaware/parsedmarc/master/kibana/kibana_saved_objects.json).
+10. Download & Import Kibana Saved Objects [export.ndjson](https://raw.githubusercontent.com/domainaware/parsedmarc/master/kibana/export.ndjson).
 
-Go to `https://parsedmarc.example.com/app/kibana#/management/kibana/objects?_g=()` click on `Import`.
+Go to `https://parsedmarc.example.com/app/management/kibana/objects` click on `Import`.
 
-Import downloaded kibana_saved_objects.json with override.
+Import downloaded export.ndjson with override.
 
 ## Dashboard Sample
 ![ParceDMARC-Sample](https://github.com/dragoangel/parsedmarc-dockerized/raw/master/ParceDMARC-Sample.png)
