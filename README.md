@@ -63,12 +63,12 @@ volumes:
 ```
 
 5. Create `nginx/htpasswd` to provide Basic-Authentification for Nginx.
-Change `dnf` to your package manager and `anyusername` to your needs.
 In end you will be prompted to enter password to console.
 ```
-dnf install -y httpd-tools
-htpasswd -c nginx/htpasswd anyusername
+docker-compose run nginx htpasswd -c /etc/nginx-secrets/htpasswd anyusername
 ```
+
+You will be prompted for password.
 
 6. Generate & put your SSL keypair `kibana.crt` and `kibana.key` to `nginx/ssl` folder.
 
