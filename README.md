@@ -55,12 +55,15 @@ user = parsedmarc@example.com
 password = somepassword
 ```
 
-4. Enable IP geolocation by installing [GeoIP Update software](https://github.com/maxmind/geoipupdate). And edit `docker-compose.yml` to enable access to the MaxMind databases on your host system.
-```
-volumes:
-  - ./parsedmarc/parsedmarc.ini:/etc/parsedmarc.ini:z
-  - /path/to/GeoIP:/usr/share/GeoIP
-```
+4. Geolocation data
+
+Create an account and generate a licence key at
+[maxmind](https://www.maxmind.com/en/accounts/current/license-key). And
+update GEOIPUPDATE_ACCOUNT_ID and GEOIPUPDATE_LICENSE_KEY in the
+`docker-compose`
+
+For more information refer to [GeoIP Update
+software](https://github.com/maxmind/geoipupdate) github page
 
 5. Create `nginx/htpasswd` to provide Basic-Authentification for Nginx.
 In end you will be prompted to enter password to console.

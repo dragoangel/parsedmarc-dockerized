@@ -10,13 +10,27 @@ services:
     tty: true
     volumes:
       - ./parsedmarc/parsedmarc.ini:/etc/parsedmarc.ini:z
-      #- /path/to/GeoIP:/usr/share/GeoIP
+      - geoipupdate_data:/usr/share/GeoIP
     restart: unless-stopped
     networks:
       - parsedmarc-network
     depends_on:
       elasticsearch:
         condition: service_healthy
+
+  geoipupdate:
+    container_name: geoipupdate
+    image: maxmindinc/geoipupdate
+    restart: unless-stopped
+    environment:
+      - GEOIPUPDATE_ACCOUNT_ID=
+      - GEOIPUPDATE_LICENSE_KEY=
+      - 'GEOIPUPDATE_EDITION_IDS=GeoLite2-ASN GeoLite2-City GeoLite2-Country'
+      - GEOIPUPDATE_FREQUENCY=72
+    networks:
+      - geoipupdate
+    volumes:
+      - geoipupdate_data:/usr/share/GeoIP
 
   elasticsearch:
     container_name: "elasticsearch"
@@ -92,8 +106,11 @@ services:
 networks:
     parsedmarc-network:
       driver: bridge
+    geoipupdate:
+
 volumes:
   acmeout:
   elasticsearch_data:
+  geoipupdate_data:
   acme_certs:
   nginx_secrets:
