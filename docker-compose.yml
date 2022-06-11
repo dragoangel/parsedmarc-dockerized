@@ -1,4 +1,4 @@
-version: '2.4'
+version: '3.4'
 
 services:
   parsedmarc:
@@ -31,7 +31,7 @@ services:
         soft: -1
         hard: -1
     volumes:
-      - ./elasticsearch/data/:/usr/share/elasticsearch/data/:z
+      - elasticsearch_data:/usr/share/elasticsearch/data/
     restart: "unless-stopped"
     networks:
       - parsedmarc-network
@@ -77,3 +77,5 @@ services:
 networks:
     parsedmarc-network:
       driver: bridge
+volumes:
+  elasticsearch_data:
