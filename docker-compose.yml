@@ -71,14 +71,29 @@ services:
       - "443:443"
     volumes:
       - ./nginx/conf.d/:/etc/nginx/conf.d/:z
-      - ./nginx/ssl/:/etc/nginx/ssl/:z
+      - acme_certs:/etc/nginx/ssl/
       - nginx_secrets:/etc/nginx-secrets
     networks:
       - parsedmarc-network
 
+  acme.sh:
+    image: neilpang/acme.sh
+    container_name: acme.sh
+    command: daemon
+    volumes:
+      - acmeout:/acme.sh
+      - acme_certs:/installed_certs
+    environment:
+
+      # CloudFlare
+      - CF_Token=
+      - CF_Account_ID=
+      - CF_Zone_ID=
 networks:
     parsedmarc-network:
       driver: bridge
 volumes:
+  acmeout:
   elasticsearch_data:
+  acme_certs:
   nginx_secrets:
