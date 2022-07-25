@@ -6,7 +6,6 @@ services:
     build:
       context: .
       dockerfile: parsedmarc/Dockerfile
-    command: "parsedmarc -c /etc/parsedmarc.ini"
     tty: true
     volumes:
       - ./parsedmarc/parsedmarc.ini:/etc/parsedmarc.ini:z
