@@ -7,9 +7,18 @@ services:
       context: .
       dockerfile: parsedmarc/Dockerfile
     tty: true
-    volumes:
-      - ./parsedmarc/parsedmarc.ini:/etc/parsedmarc.ini:z
+    volumes: []
       #- /path/to/GeoIP:/usr/share/GeoIP
+    environment:
+      # in general: <section>.<option>
+      parsedmarc.general.save_aggregate: "True"
+      parsedmarc.general.save_forensic: "True"
+      # parsedmarc.mailbox.watch: "True"
+      # parsedmarc.imap.host: "imap.example.com"
+      # parsedmarc.imap.user: "parsedmarc@example.com"
+      # parsedmarc.imap.password: "somepassword"
+      parsedmarc.elasticsearch.hosts: "http://elasticsearch:9200"
+      parsedmarc.elasticsearch.ssl: "False"
     restart: unless-stopped
     networks:
       - parsedmarc-network
