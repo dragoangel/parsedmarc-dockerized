@@ -4,8 +4,8 @@ services:
   parsedmarc:
     container_name: "parsedmarc"
     build:
-      context: .
-      dockerfile: parsedmarc/Dockerfile
+      context: ./parsedmarc/
+      dockerfile: ./Dockerfile
     tty: true
     volumes: []
       #- /path/to/GeoIP:/usr/share/GeoIP
