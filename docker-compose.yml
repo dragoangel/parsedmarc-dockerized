@@ -15,8 +15,7 @@ services:
     networks:
       - parsedmarc-network
     depends_on:
-      elasticsearch:
-        condition: service_healthy
+      - elasticsearch
 
   elasticsearch:
     container_name: "elasticsearch"
@@ -56,8 +55,7 @@ services:
     networks:
       - parsedmarc-network
     depends_on:
-      elasticsearch:
-        condition: service_healthy
+      - elasticsearch
 
   nginx:
     container_name: "nginx"
