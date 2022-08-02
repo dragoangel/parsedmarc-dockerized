@@ -6,4 +6,7 @@ RUN apt-get update \
     && rm -rf /root/.cache/ \
     && rm -rf /var/lib/{apt,dpkg}/
 
-CMD ["parsedmarc"]
+COPY ./entrypoint.py /
+RUN chmod +x /entrypoint.py
+
+ENTRYPOINT ["/entrypoint.py"]
