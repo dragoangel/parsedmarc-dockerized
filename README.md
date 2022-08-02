@@ -55,26 +55,41 @@ user = parsedmarc@example.com
 password = somepassword
 ```
 
-4. Enable IP geolocation by installing [GeoIP Update software](https://github.com/maxmind/geoipupdate). And edit `docker-compose.yml` to enable access to the MaxMind databases on your host system.
-```
-volumes:
-  - ./parsedmarc/parsedmarc.ini:/etc/parsedmarc.ini:z
-  - /path/to/GeoIP:/usr/share/GeoIP
-```
+4. Geolocation data
+
+Create an account and generate a licence key at
+[maxmind](https://www.maxmind.com/en/accounts/current/license-key). And
+update GEOIPUPDATE_ACCOUNT_ID and GEOIPUPDATE_LICENSE_KEY in the
+`docker-compose`
+
+For more information refer to [GeoIP Update
+software](https://github.com/maxmind/geoipupdate) github page
 
 5. Create `nginx/htpasswd` to provide Basic-Authentification for Nginx.
-Change `dnf` to your package manager and `anyusername` to your needs.
 In end you will be prompted to enter password to console.
 ```
-dnf install -y httpd-tools
-htpasswd -c nginx/htpasswd anyusername
+docker-compose run nginx htpasswd -c /etc/nginx-secrets/htpasswd anyusername
 ```
 
-6. Generate & put your SSL keypair `kibana.crt` and `kibana.key` to `nginx/ssl` folder.
+You will be prompted for password.
 
-There are to many posible solutuins like [Let's Encrypt](https://letsencrypt.org/docs/client-options/), private PKI or [self-hosted](https://www.digitalocean.com/community/tutorials/how-to-create-a-self-signed-ssl-certificate-for-nginx-in-ubuntu-16-04) certificates.
+6. Generate SSL certificates
 
-It all up to you what to use. Note: for Let's Encrypt you need modify nginx configs to support it. You can use local ACME or modify docker-compose image. 
+The following example leverages the Cloudflare API. But you can
+similary use any of the options provided by acme.sh. But if you do,
+don't forget to create a pull request with the verified steps :).
+
+Update `docker-compose.yml` with your Cloudflare credentials, and then simply run:
+
+```
+docker-compose run acme.sh --issue -d parsedmarc.your.domain --dns dns_cf
+ocker-compose run acme.sh --install-cert -d parsedmarc.your.domain --cert-file /installed_certs/kibana.crt --key-file /installed_certs/kibana.key
+```
+
+From now on, acme.sh container will take care of certifcates
+renewal. The nginx would not get automatically restarted, but it will
+reload certificates once a week by means of a cron job.
+
 
 7. Create needed folders and configure permissions.
 ```

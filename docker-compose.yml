@@ -10,12 +10,26 @@ services:
     tty: true
     volumes:
       - ./parsedmarc/parsedmarc.ini:/etc/parsedmarc.ini:z
-      #- /path/to/GeoIP:/usr/share/GeoIP
+      - geoipupdate_data:/usr/share/GeoIP
     restart: unless-stopped
     networks:
       - parsedmarc-network
     depends_on:
       - elasticsearch
+
+  geoipupdate:
+    container_name: geoipupdate
+    image: maxmindinc/geoipupdate
+    restart: unless-stopped
+    environment:
+      - GEOIPUPDATE_ACCOUNT_ID=
+      - GEOIPUPDATE_LICENSE_KEY=
+      - 'GEOIPUPDATE_EDITION_IDS=GeoLite2-ASN GeoLite2-City GeoLite2-Country'
+      - GEOIPUPDATE_FREQUENCY=72
+    networks:
+      - geoipupdate
+    volumes:
+      - geoipupdate_data:/usr/share/GeoIP
 
   elasticsearch:
     container_name: "elasticsearch"
@@ -30,7 +44,7 @@ services:
         soft: -1
         hard: -1
     volumes:
-      - ./elasticsearch/data/:/usr/share/elasticsearch/data/:z
+      - elasticsearch_data:/usr/share/elasticsearch/data/
     restart: "unless-stopped"
     networks:
       - parsedmarc-network
@@ -57,7 +71,9 @@ services:
 
   nginx:
     container_name: "nginx"
-    image: nginx:alpine
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
     restart: unless-stopped
     tty: true
     ports:
@@ -65,11 +81,32 @@ services:
       - "443:443"
     volumes:
       - ./nginx/conf.d/:/etc/nginx/conf.d/:z
-      - ./nginx/ssl/:/etc/nginx/ssl/:z
-      - ./nginx/htpasswd:/etc/nginx/htpasswd:z
+      - acme_certs:/etc/nginx/ssl/
+      - nginx_secrets:/etc/nginx-secrets
     networks:
       - parsedmarc-network
 
+  acme.sh:
+    image: neilpang/acme.sh
+    container_name: acme.sh
+    command: daemon
+    volumes:
+      - acmeout:/acme.sh
+      - acme_certs:/installed_certs
+    environment:
+
+      # CloudFlare
+      - CF_Token=
+      - CF_Account_ID=
+      - CF_Zone_ID=
 networks:
     parsedmarc-network:
       driver: bridge
+    geoipupdate:
+
+volumes:
+  acmeout:
+  elasticsearch_data:
+  geoipupdate_data:
+  acme_certs:
+  nginx_secrets:
