@@ -49,8 +49,6 @@ services:
       SERVER_HOST: "0.0.0.0"
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
       XPACK_MONITORING_UI_CONTAINER_ELASTICSEARCH_ENABLED: "true"
-    ports:
-      - "5601:5601"
     restart: unless-stopped
     networks:
       - parsedmarc-network
