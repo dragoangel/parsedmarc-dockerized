@@ -90,7 +90,7 @@ chmod 640 nginx/ssl/kibana.key
 
 9. Start stack.
 ```
-docker-compose -up d
+docker-compose up -d
 ```
 
 10. Download & Import Kibana Saved Objects [export.ndjson](https://raw.githubusercontent.com/domainaware/parsedmarc/master/kibana/export.ndjson).
