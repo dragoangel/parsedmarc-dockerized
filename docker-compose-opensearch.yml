@@ -1,0 +1,85 @@
+services:
+  opensearch:
+    container_name: opensearch
+    image: opensearchproject/opensearch:2.19.6@sha256:e321cb03c643874c42240458a618db56bc1e4fc143b10c41bec653542bc6851b
+    restart: unless-stopped
+    environment:
+      - node.name=opensearch-node1
+      - cluster.name=parsedmarc-opensearch
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
+      - DISABLE_INSTALL_DEMO_CONFIG=true
+      - DISABLE_SECURITY_PLUGIN=true
+      - plugins.security.disabled=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    ports:
+      # The security plugin is disabled, so publish on loopback only.
+      # Override OPENSEARCH_BIND_ADDRESS to expose it deliberately.
+      - "${OPENSEARCH_BIND_ADDRESS:-127.0.0.1}:9200:9200"
+      - "${OPENSEARCH_BIND_ADDRESS:-127.0.0.1}:9600:9600"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200 >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+    networks:
+      elasticsearch:
+        aliases:
+          - es01
+
+  opensearch-dashboards:
+    container_name: opensearch-dashboards
+    image: opensearchproject/opensearch-dashboards:2.19.6@sha256:9b41bd022a36744b271f8d62ed6d0d64067a3b18b5e7b50d2a70d7f60861691d
+    restart: unless-stopped
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    environment:
+      OPENSEARCH_HOSTS: '["http://opensearch:9200"]'
+      DISABLE_SECURITY_DASHBOARDS_PLUGIN: "true"
+    ports:
+      # No auth here; remote access goes through the nginx profile.
+      - "${KIBANA_BIND_ADDRESS:-127.0.0.1}:5601:5601"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -I http://localhost:5601 | grep -q 'HTTP/' || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 20
+      start_period: 40s
+    networks:
+      elasticsearch:
+        aliases:
+          - kibana
+
+  nginx:
+    profiles: ["nginx"]
+    container_name: opensearch-nginx
+    image: nginx:1.30.6-alpine@sha256:970364228b1e4f932abc22d321932816782cca8a20b85a77552a7cfe9acfb3b5
+    restart: unless-stopped
+    depends_on:
+      opensearch-dashboards:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/htpasswd:/etc/nginx/htpasswd:ro
+    networks:
+      - elasticsearch
+
+networks:
+  elasticsearch:
+    name: elasticsearch_elastic
+    driver: bridge
+
+volumes:
+  opensearch_data:

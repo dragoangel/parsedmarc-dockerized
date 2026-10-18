@@ -1,75 +1,84 @@
-version: '3.4'
-
 services:
   parsedmarc:
-    container_name: "parsedmarc"
+    container_name: parsedmarc
+    image: ghcr.io/mkilijanek/parsedmarc:latest
+    restart: unless-stopped
+    command: ["-c", "/etc/parsedmarc.ini"]
+    # Secrets from .env, passed through only when set; they override parsedmarc.ini.
+    environment:
+      - PARSEDMARC_IMAP_PASSWORD
+      - PARSEDMARC_ELASTICSEARCH_PASSWORD
+      - PARSEDMARC_ELASTICSEARCH_API_KEY
+      - PARSEDMARC_OPENSEARCH_PASSWORD
+      - PARSEDMARC_MSGRAPH_PASSWORD
+      - PARSEDMARC_MSGRAPH_CLIENT_SECRET
+    volumes:
+      - ./parsedmarc/parsedmarc.ini:/etc/parsedmarc.ini:ro
+      - ./logs:/var/log/parsedmarc
+      - msgraph_tokens:/tokens:ro
+    networks:
+      - elasticsearch
+
+  msgraph-token-refresh-secret:
+    profiles: ["msgraph-secret"]
     build:
-      context: .
-      dockerfile: parsedmarc/Dockerfile
-    command: "parsedmarc -c /etc/parsedmarc.ini"
-    tty: true
-    volumes:
-      - ./parsedmarc/parsedmarc.ini:/etc/parsedmarc.ini:z
-      #- /path/to/GeoIP:/usr/share/GeoIP
+      context: ./msgraph-token-refresh
+    container_name: msgraph-token-refresh-secret
     restart: unless-stopped
-    networks:
-      - parsedmarc-network
-    depends_on:
-      - elasticsearch
-
-  elasticsearch:
-    container_name: "elasticsearch"
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
     environment:
-      - cluster.name=parsedmarc
-      - discovery.type=single-node
-      - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
+      AUTH_METHOD: client_secret
+      TENANT_ID: ${TENANT_ID:-}
+      CLIENT_ID: ${CLIENT_ID:-}
+      GRAPH_URL: ${GRAPH_URL:-https://graph.microsoft.com}
+      TOKEN_PATH: /tokens/.token.json
+      REFRESH_SECONDS: ${REFRESH_SECONDS:-3300}
     volumes:
-      - ./elasticsearch/data/:/usr/share/elasticsearch/data/:z
-    restart: "unless-stopped"
-    networks:
-      - parsedmarc-network
+      - msgraph_tokens:/tokens
+    secrets:
+      - msgraph_client_secret
     healthcheck:
-      test: ["CMD", "curl","-s" ,"-f", "http://localhost:9200/_cat/health"]
-      interval: 1m
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+      test: ["CMD-SHELL", "test -s /tokens/.token.json"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
 
-  kibana:
-    container_name: "kibana"
-    image: docker.elastic.co/kibana/kibana:7.17.0
+  msgraph-token-refresh-cert:
+    profiles: ["msgraph-cert"]
+    build:
+      context: ./msgraph-token-refresh
+    container_name: msgraph-token-refresh-cert
+    restart: unless-stopped
     environment:
-      SERVER_NAME: parsedmarc
-      SERVER_HOST: "0.0.0.0"
-      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
-      XPACK_MONITORING_UI_CONTAINER_ELASTICSEARCH_ENABLED: "true"
-    restart: unless-stopped
-    networks:
-      - parsedmarc-network
-    depends_on:
-      - elasticsearch
-
-  nginx:
-    container_name: "nginx"
-    image: nginx:alpine
-    restart: unless-stopped
-    tty: true
-    ports:
-      - "80:80"
-      - "443:443"
+      AUTH_METHOD: certificate
+      TENANT_ID: ${TENANT_ID:-}
+      CLIENT_ID: ${CLIENT_ID:-}
+      MSGRAPH_CERT_THUMBPRINT: ${MSGRAPH_CERT_THUMBPRINT:-}
+      GRAPH_URL: ${GRAPH_URL:-https://graph.microsoft.com}
+      TOKEN_PATH: /tokens/.token.json
+      REFRESH_SECONDS: ${REFRESH_SECONDS:-3300}
     volumes:
-      - ./nginx/conf.d/:/etc/nginx/conf.d/:z
-      - ./nginx/ssl/:/etc/nginx/ssl/:z
-      - ./nginx/htpasswd:/etc/nginx/htpasswd:z
-    networks:
-      - parsedmarc-network
+      - msgraph_tokens:/tokens
+    secrets:
+      - msgraph_client_certificate_pem
+      - msgraph_client_certificate_public_pem
+    healthcheck:
+      test: ["CMD-SHELL", "test -s /tokens/.token.json"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
 
 networks:
-    parsedmarc-network:
-      driver: bridge
+  elasticsearch:
+    external: true
+    name: ${ELASTIC_NETWORK:-elasticsearch_elastic}
+
+secrets:
+  msgraph_client_secret:
+    file: ./secrets/msgraph_client_secret.txt
+  msgraph_client_certificate_pem:
+    file: ./secrets/msgraph_client_certificate.pem
+  msgraph_client_certificate_public_pem:
+    file: ./secrets/msgraph_client_certificate_public.pem
+
+volumes:
+  msgraph_tokens:

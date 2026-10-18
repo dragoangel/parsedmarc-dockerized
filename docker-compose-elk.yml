@@ -1,0 +1,86 @@
+services:
+  elasticsearch:
+    container_name: elk-elasticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.4
+    restart: unless-stopped
+    environment:
+      - node.name=es01
+      - cluster.name=parsedmarc
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata01:/usr/share/elasticsearch/data
+    ports:
+      # Security is disabled on this single-node cluster, so publish it on
+      # loopback only. Override ES_BIND_ADDRESS to expose it deliberately.
+      - "${ES_BIND_ADDRESS:-127.0.0.1}:9200:9200"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200 >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 20s
+    networks:
+      elasticsearch:
+        aliases:
+          - es01
+
+  kibana:
+    container_name: elk-kibana
+    image: docker.elastic.co/kibana/kibana:8.19.4
+    restart: unless-stopped
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      - SERVER_NAME=parsedmarc
+      - SERVER_HOST=0.0.0.0
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${KIBANA_ENCRYPTEDSAVEDOBJECTS_KEY:?set KIBANA_ENCRYPTEDSAVEDOBJECTS_KEY (32+ random chars) in .env}
+      - XPACK_REPORTING_ENCRYPTIONKEY=${KIBANA_REPORTING_KEY:?set KIBANA_REPORTING_KEY (32+ random chars) in .env}
+      - XPACK_SECURITY_ENCRYPTIONKEY=${KIBANA_SECURITY_KEY:?set KIBANA_SECURITY_KEY (32+ random chars) in .env}
+    ports:
+      # Kibana has no auth here; remote access goes through the nginx profile.
+      - "${KIBANA_BIND_ADDRESS:-127.0.0.1}:5601:5601"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -I http://localhost:5601 | grep -q 'HTTP/1.1 302' || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+    networks:
+      - elasticsearch
+
+  nginx:
+    profiles: ["nginx"]
+    container_name: elk-nginx
+    image: nginx:1.30.6-alpine@sha256:970364228b1e4f932abc22d321932816782cca8a20b85a77552a7cfe9acfb3b5
+    restart: unless-stopped
+    depends_on:
+      kibana:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/htpasswd:/etc/nginx/htpasswd:ro
+    networks:
+      - elasticsearch
+
+networks:
+  elasticsearch:
+    name: elasticsearch_elastic
+    driver: bridge
+
+volumes:
+  esdata01:

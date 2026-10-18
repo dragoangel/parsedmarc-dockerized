@@ -1,0 +1,18 @@
+services:
+  parsedmarc:
+    build:
+      context: ./parsedmarc
+      dockerfile: Dockerfile.hardened
+      args:
+        PARSEDMARC_VERSION: ${PARSEDMARC_VERSION:-11.0.3}
+    image: parsedmarc:hardened
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 256
+    mem_limit: 512m
+    cpus: 1.0

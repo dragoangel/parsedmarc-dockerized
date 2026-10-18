@@ -1,0 +1,57 @@
+# syntax=docker/dockerfile:1
+
+############################
+# Builder stage
+############################
+# Debian's python3 (3.13) matches the interpreter in the
+# distroless/python3-debian13 runtime stage. A venv built with the
+# docker-official /usr/local python cannot run there (its interpreter
+# path does not exist in the distroless image).
+FROM debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f AS builder
+
+ARG PARSEDMARC_VERSION=11.0.3
+ARG VCS_REF=""
+ARG BUILD_DATE=""
+ARG SOURCE_DATE_EPOCH=""
+
+ENV VENV_PATH=/opt/venv
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+RUN if [ -z "${SOURCE_DATE_EPOCH}" ]; then unset SOURCE_DATE_EPOCH; fi \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends python3 python3-venv ca-certificates \
+ && rm -rf /var/lib/apt/lists/* \
+ && python3 -m venv "${VENV_PATH}" \
+ && "${VENV_PATH}/bin/pip" install --no-cache-dir --upgrade pip \
+ && "${VENV_PATH}/bin/pip" install --no-cache-dir "parsedmarc[all]==${PARSEDMARC_VERSION}" "urllib3>=2.8.0"
+
+############################
+# Runtime stage (distroless)
+############################
+FROM gcr.io/distroless/python3-debian13:nonroot@sha256:83aa8d4f74a4d7f7cf2d472054139bef71a927b76c680c0f2e1021d6b1d6d732
+
+ARG PARSEDMARC_VERSION=11.0.3
+ARG VCS_REF=""
+ARG BUILD_DATE=""
+ARG SOURCE_DATE_EPOCH=""
+
+LABEL org.opencontainers.image.source="https://github.com/mkilijanek/parsedmarc" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.version="${PARSEDMARC_VERSION}" \
+      org.opencontainers.image.vendor="mkilijanek" \
+      org.opencontainers.image.title="parsedmarc (distroless)"
+
+ENV VENV_PATH=/opt/venv
+ENV PATH="${VENV_PATH}/bin:${PATH}"
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+COPY --from=builder ${VENV_PATH} ${VENV_PATH}
+
+USER 65532:65532
+
+ENTRYPOINT ["parsedmarc"]
+CMD ["-h"]

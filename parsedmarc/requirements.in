@@ -1,0 +1,2 @@
+parsedmarc[all]==11.0.3
+urllib3>=2.8.0
